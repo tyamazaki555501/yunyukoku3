@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>♪主な国の品目別財貿易〜♫ 2026/2027完全版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 50%, #fef3c7 100%);
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .kiwi-font {
+            font-family: 'Kiwi Maru', serif;
+        }
+
+        /* iOS Picker Wheel styling */
+        .picker-container {
+            position: relative;
+            height: 150px;
+            overflow: hidden;
+            background: #f8fafc;
+            border-radius: 16px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+        }
+        .picker-selection-overlay {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: rgba(16, 185, 129, 0.15);
+            border-top: 2px solid #10b981;
+            border-bottom: 2px solid #10b981;
+            pointer-events: none;
+        }
+        .picker-list {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: 100%;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding-top: 50px;
+            padding-bottom: 50px;
+        }
+        .picker-list::-webkit-scrollbar {
+            display: none;
+        }
+        .picker-item {
+            height: 50px;
+            scroll-snap-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #94a3b8;
+            transition: all 0.15s ease;
+        }
+
+        /* Bounce Animations */
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes partyShake {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-10deg) scale(1.1); }
+            75% { transform: rotate(10deg) scale(1.1); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        .animate-party {
+            animation: partyShake 0.4s ease-in-out infinite alternate;
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #a7f3d0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-md p-3 sm:p-4 sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="kiwi-font text-base sm:text-xl md:text-2xl font-bold tracking-wide flex items-center gap-1 sm:gap-2 drop-shadow-sm">
+                <span>♪</span>
+                <span>主な国の品目別財貿易</span>
+                <span>〜♫</span>
+                <span class="text-xs sm:text-sm bg-white text-emerald-700 px-2 py-0.5 rounded-full ml-1 sm:ml-2 font-normal shadow-inner">2026/2027完全版</span>
+            </h1>
+            <button id="soundToggleBtn" onclick="toggleSound()" class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-2 rounded-full w-10 h-10 flex items-center justify-center transition shadow">
+                <i id="soundIcon" class="fa-solid fa-volume-high text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-between">
+
+        <!-- STEP 1: 出題モード設定画面 -->
+        <section id="modeView" class="space-y-6 my-auto py-4">
+            <div class="text-center space-y-2">
+                <span class="bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold px-3 py-1 rounded-full border border-emerald-300">社会科・世界地理・貿易対日対比</span>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-800 kiwi-font">出題モードを選択してね！</h2>
+                <p class="text-xs sm:text-sm text-slate-600">輸出（1位〜6位）の品目順位から国名を当てよう！</p>
+            </div>
+
+            <!-- Mode Tabs -->
+            <div class="grid grid-cols-3 gap-2 p-1 bg-slate-200/70 rounded-2xl">
+                <button id="modeBtnOrder" onclick="switchModeTab('order')" class="py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition">
+                    No.通り
+                </button>
+                <button id="modeBtnShuffle" onclick="switchModeTab('shuffle')" class="py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition">
+                    シャッフル
+                </button>
+                <button id="modeBtnPass" onclick="switchModeTab('pass')" class="py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition">
+                    合格点に挑戦
+                </button>
+            </div>
+
+            <!-- Mode Option Panels -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-slate-100 shadow-sm min-h-[240px] flex flex-col justify-center">
+                
+                <!-- Order Mode -->
+                <div id="panelOrder" class="text-center space-y-3">
+                    <div class="text-4xl">🌍</div>
+                    <h3 class="font-bold text-slate-800 text-lg">No.通りに出題</h3>
+                    <p class="text-xs sm:text-sm text-slate-500">No.1（台湾）から順番に全30国の問題にチャレンジします。</p>
+                </div>
+
+                <!-- Shuffle Mode -->
+                <div id="panelShuffle" class="hidden space-y-3">
+                    <div class="text-center">
+                        <h3 class="font-bold text-slate-800 text-lg">シャッフル範囲の設定</h3>
+                        <p class="text-xs text-slate-500">出題する範囲（開始No. 〜 終了No.）を上下にスクロールして選択！</p>
+                    </div>
+
+                    <div class="max-w-xs mx-auto w-full flex items-center justify-center gap-2 sm:gap-3">
+                        <!-- Start Picker -->
+                        <div class="flex flex-col items-center">
+                            <span class="text-xs font-bold text-slate-500 mb-1">開始</span>
+                            <div class="picker-container w-28">
+                                <div class="picker-selection-overlay"></div>
+                                <div id="shuffleStartPicker" class="picker-list"></div>
+                            </div>
+                        </div>
+
+                        <span class="text-slate-400 font-bold text-xl mt-5">〜</span>
+
+                        <!-- End Picker -->
+                        <div class="flex flex-col items-center">
+                            <span class="text-xs font-bold text-slate-500 mb-1">終了</span>
+                            <div class="picker-container w-28">
+                                <div class="picker-selection-overlay"></div>
+                                <div id="shuffleEndPicker" class="picker-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pass Challenge Mode -->
+                <div id="panelPass" class="hidden space-y-3">
+                    <div class="text-center">
+                        <h3 class="font-bold text-slate-800 text-lg">合格目標数の設定</h3>
+                        <p class="text-xs text-slate-500">ドラムを上下にスワイプ・スクロールして目標を選択！</p>
+                    </div>
+
+                    <div class="max-w-xs mx-auto w-full flex items-center justify-center gap-3">
+                        <div class="picker-container w-32">
+                            <div class="picker-selection-overlay"></div>
+                            <div id="passPickerList" class="picker-list"></div>
+                        </div>
+                        <div class="text-left font-bold text-slate-700 text-sm sm:text-base">
+                            / <span id="passTotalCount">30</span> 問正解で<br>
+                            <span class="text-emerald-600 text-lg sm:text-xl font-black">合格！</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xl py-4 rounded-2xl shadow-md hover:shadow-lg transition transform active:scale-98">
+                スタート！ 🚀
+            </button>
+        </section>
+
+        <!-- STEP 2: クイズ画面 -->
+        <section id="quizView" class="hidden flex-1 flex flex-col justify-between space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-white px-3 sm:px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm text-xs sm:text-sm">
+                <div class="flex items-center gap-2">
+                    <button onclick="showView('modeView')" class="text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition">
+                        <i class="fa-solid fa-house"></i> 設定にもどる
+                    </button>
+                    <button onclick="restartQuizSession()" class="text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition">
+                        <i class="fa-solid fa-rotate-left"></i> 最初の出題に戻る
+                    </button>
+                </div>
+                <div class="flex items-center gap-3 font-bold text-slate-700 ml-auto">
+                    <div>
+                        問題 <span id="currentQuestionNum" class="text-emerald-600 text-base">1</span> / <span id="totalQuestionNum">30</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                        <span>🔥 連続:</span>
+                        <span id="streakCounter" class="text-base">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-4 sm:p-6 border-2 border-emerald-200 shadow-md relative overflow-hidden flex flex-col items-center justify-center text-center min-h-[160px] sm:min-h-[180px]">
+                <div class="absolute top-2 left-3 bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                    主な輸出対日品目（1位〜6位）
+                </div>
+
+                <div id="ranksContainer" class="mt-5 flex flex-wrap justify-center items-center gap-2 sm:gap-3 text-base sm:text-xl font-black text-slate-800">
+                </div>
+
+                <div id="resultBanner" class="hidden mt-3 text-lg sm:text-2xl font-black px-6 py-2 rounded-2xl animate-pop shadow-md border-2">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center px-1">
+                    <span class="text-xs sm:text-sm font-bold text-slate-600">当てはまる国名を1つ選んでね：</span>
+                    <span id="choiceCountLabel" class="text-xs text-slate-400">選択肢: 30ヶ国</span>
+                </div>
+
+                <div id="choicesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 max-h-[220px] sm:max-h-[260px] overflow-y-auto p-1 custom-scroll">
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-200/60 flex justify-end gap-3">
+                <button id="showAnswerBtn" onclick="showAnswer()" class="px-5 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-2xl shadow transition text-base flex items-center justify-center gap-2 border border-emerald-300">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>正解を表示</span>
+                </button>
+                <button id="nextBtn" onclick="nextQuestion()" disabled class="w-full sm:w-auto px-8 py-3 bg-slate-300 text-slate-500 font-bold rounded-2xl shadow transition text-base flex items-center justify-center gap-2 cursor-not-allowed">
+                    <span>次の問題へ</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 3: 成果・合格画面 -->
+        <section id="resultView" class="hidden space-y-6 my-auto text-center py-4">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border-2 border-emerald-300 shadow-lg space-y-4 max-w-md mx-auto animate-pop">
+                <div id="resultIcon" class="text-6xl sm:text-7xl">🎉</div>
+                <h2 id="resultTitle" class="text-2xl sm:text-3xl font-black text-slate-800 kiwi-font">チャレンジ終了！</h2>
+                
+                <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 space-y-2">
+                    <div class="text-xs text-emerald-800 font-bold">正解数</div>
+                    <div class="text-3xl sm:text-4xl font-black text-emerald-600">
+                        <span id="finalCorrectCount">0</span> / <span id="finalTotalCount">0</span> 問
+                    </div>
+                    <div id="passBadge" class="hidden inline-block bg-emerald-500 text-white font-bold text-xs px-3 py-1 rounded-full shadow">
+                        目標達成！合格おめでとう！ ✨
+                    </div>
+                </div>
+
+                <div id="maxStreakInfo" class="text-xs sm:text-sm text-slate-600 font-bold">
+                    最大連続正解数: <span id="finalMaxStreak" class="text-amber-600 text-base">0</span> 回
+                </div>
+
+                <div class="pt-2 space-y-2">
+                    <button onclick="retryCurrentMode()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg py-3 rounded-2xl shadow transition">
+                        もう一度挑戦する 🔄
+                    </button>
+                    <button onclick="showView('modeView')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm py-2.5 rounded-2xl transition">
+                        設定にもどる 🏠
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Cracker Overlay Animations -->
+    <div id="crackerOverlay" class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div id="crackerContainer" class="flex gap-6 sm:gap-12 justify-center items-center">
+        </div>
+    </div>
+
+    <script>
+        // 全30国の貿易データマスター
+        const MASTER_DATA = [
+            { no: 1, name: "台湾", ranks: ["機械類", "プラスチック", "鉄鋼", "科学光学機器", "金属製品", "輸送用機器"] },
+            { no: 2, name: "韓国", ranks: ["機械類", "石油製品", "鉄鋼", "プラスチック", "有機化合物", "化粧品・香料類"] },
+            { no: 3, name: "タイ", ranks: ["機械類", "輸送用機器", "肉類・同調製品", "プラスチック", "科学光学機器", "魚介類・同調製品"] },
+            { no: 4, name: "香港", ranks: ["魚介類・同調製品", "機械類", "貴金属装身具類", "ダイヤモンド"] },
+            { no: 5, name: "ベトナム", ranks: ["機械類", "衣類・同附属品", "はき物", "魚介類・同調製品", "木製品", "織物類"] },
+            { no: 6, name: "シンガポール", ranks: ["機械類", "科学光学機器", "医薬品", "石油製品", "プラスチック"] },
+            { no: 7, name: "マレーシア", ranks: ["液化天然ガス", "機械類", "植物性油脂", "木製品", "プラスチック"] },
+            { no: 8, name: "フィリピン", ranks: ["機械類", "果実", "木製品", "酸化ニッケル"] },
+            { no: 9, name: "インドネシア", ranks: ["石炭", "機械類", "銅鉱", "液化天然ガス", "ニッケルのマット", "衣類・同附属品"] },
+            { no: 10, name: "インド", ranks: ["機械類", "有機化合物", "輸送用機器", "魚介類・同調製品", "ダイヤモンド", "アルミ・同合金"] },
+            { no: 11, name: "サウジアラビア", ranks: ["原油", "石油製品", "有機化合物", "銅くず", "アルミ・同合金", "プラスチック"] },
+            { no: 12, name: "カタール", ranks: ["原油", "石油製品", "液化天然ガス", "アルミ・同合金", "無機化合物"] },
+            { no: 13, name: "アラブ首長国連邦", ranks: ["原油", "石油製品", "アルミ・同合金", "液化天然ガス", "プラスチック", "白金くず"] },
+            { no: 14, name: "南アフリカ共和国", ranks: ["白金族の金属", "鉄鉱石", "石炭", "輸送用機器"] },
+            { no: 15, name: "イギリス", ranks: ["機械類", "医薬品", "輸送用機器", "ウイスキー", "科学光学機器"] },
+            { no: 16, name: "アイルランド", ranks: ["医薬品", "科学光学機器", "機械類", "有機化合物"] },
+            { no: 17, name: "オランダ", ranks: ["機械類", "医薬品", "プラスチック", "野菜", "チーズ・カード", "ココア"] },
+            { no: 18, name: "ベルギー", ranks: ["医薬品", "有機化合物", "機械類", "ダイヤモンド", "白金族の金属", "チョコレート類"] },
+            { no: 19, name: "フランス", ranks: ["輸送用機器", "機械類", "バッグ類", "貴金属装身具類", "ワイン", "医薬品"] },
+            { no: 20, name: "ドイツ", ranks: ["機械類", "輸送用機器", "医薬品", "科学光学機器", "有機化合物", "プラスチック"] },
+            { no: 21, name: "スイス", ranks: ["時計・同部分品", "医薬品", "機械類", "科学光学機器", "貴金属装身具類", "有機化合物"] },
+            { no: 22, name: "イタリア", ranks: ["バッグ類", "機械類", "製造たばこ", "衣類・同附属品", "輸送用機器", "医薬品"] },
+            { no: 23, name: "ロシア", ranks: ["液化天然ガス", "魚介類・同調製品", "白金族の金属", "木材"] },
+            { no: 24, name: "カナダ", ranks: ["石炭", "肉類・同調製品", "液化石油ガス", "銅鉱", "鉄鉱石", "医薬品"] },
+            { no: 25, name: "メキシコ", ranks: ["機械類", "肉類・同調製品", "輸送用機器", "科学光学機器", "銀"] },
+            { no: 26, name: "チリ", ranks: ["銅鉱", "魚介類・同調製品", "モリブデン鉱", "肉類・同調製品", "無機化合物"] },
+            { no: 27, name: "ブラジル", ranks: ["鉄鉱石", "肉類・同調製品", "とうもろこし", "コーヒー", "有機化合物", "アルミ・同合金"] },
+            { no: 28, name: "オーストラリア", ranks: ["石炭", "液化天然ガス", "鉄鉱石", "銅鉱", "肉類・同調製品", "アルミ・同合金"] },
+            { no: 29, name: "中華人民共和国", ranks: ["機械類", "衣類・同附属品", "輸送用機器", "金属製品", "織物類", "家具"] },
+            { no: 30, name: "アメリカ合衆国", ranks: ["機械類", "医薬品", "輸送用機器（航空機類）", "液化石油ガス", "科学光学機器", "液化天然ガス"] }
+        ];
+
+        let isSoundOn = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            const icon = document.getElementById('soundIcon');
+            const btn = document.getElementById('soundToggleBtn');
+            if (isSoundOn) {
+                icon.className = 'fa-solid fa-volume-high text-lg';
+                btn.classList.remove('opacity-50');
+                playPopSound(600, 0.05);
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-lg';
+                btn.classList.add('opacity-50');
+            }
+        }
+
+        function playPopSound(freq = 520, duration = 0.08) {
+            if (!isSoundOn) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.5, ctx.currentTime + duration);
+                
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function playCorrectSound() {
+            if (!isSoundOn) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                [659.25, 880].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
+                    gain.gain.setValueAtTime(0.25, now + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.25);
+                });
+            } catch(e){}
+        }
+
+        function playIncorrectSound() {
+            if (!isSoundOn) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(196, now);
+                osc.frequency.linearRampToValueAtTime(164.81, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } catch(e){}
+        }
+
+        function playCrackerBangSound(isBig = false) {
+            if (!isSoundOn) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const bufferSize = ctx.sampleRate * (isBig ? 0.6 : 0.3);
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = isBig ? 800 : 1200;
+
+                const gain = ctx.createGain();
+                const now = ctx.currentTime;
+                gain.gain.setValueAtTime(isBig ? 0.8 : 0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + (isBig ? 0.5 : 0.25));
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                noise.start(now);
+
+                if (isBig) {
+                    const subOsc = ctx.createOscillator();
+                    const subGain = ctx.createGain();
+                    subOsc.type = 'sine';
+                    subOsc.frequency.setValueAtTime(120, now);
+                    subOsc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+                    subGain.gain.setValueAtTime(0.6, now);
+                    subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    subOsc.connect(subGain);
+                    subGain.connect(ctx.destination);
+                    subOsc.start(now);
+                    subOsc.stop(now + 0.5);
+                }
+            } catch(e){}
+        }
+
+        let currentMode = "order"; // 'order', 'shuffle', 'pass'
+        let questionsList = [];
+        let currentQuestionIdx = 0;
+        let streakCount = 0;
+        let maxStreakCount = 0;
+        let correctAnswersCount = 0;
+        let isAnsweredCorrectly = false;
+        let currentQuestionAttempts = 0;
+
+        let shuffleStartVal = 1;
+        let shuffleEndVal = 30;
+        let targetPassScore = 24;
+
+        function showView(viewId) {
+            ['modeView', 'quizView', 'resultView'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function switchModeTab(mode) {
+            currentMode = mode;
+            playPopSound(500, 0.04);
+
+            const btns = {
+                order: document.getElementById('modeBtnOrder'),
+                shuffle: document.getElementById('modeBtnShuffle'),
+                pass: document.getElementById('modeBtnPass')
+            };
+
+            const panels = {
+                order: document.getElementById('panelOrder'),
+                shuffle: document.getElementById('panelShuffle'),
+                pass: document.getElementById('panelPass')
+            };
+
+            Object.keys(btns).forEach(m => {
+                if (m === mode) {
+                    btns[m].className = "py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black bg-white text-emerald-700 shadow-sm transition";
+                    panels[m].classList.remove('hidden');
+                } else {
+                    btns[m].className = "py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition";
+                    panels[m].classList.add('hidden');
+                }
+            });
+        }
+
+        /* Generic iOS Drum Picker Helper */
+        function createPicker(container, total, labelPrefix, onSelectCallback) {
+            container.innerHTML = '';
+            for (let i = 1; i <= total; i++) {
+                const item = document.createElement('div');
+                item.className = 'picker-item';
+                item.textContent = `${labelPrefix}${i}`;
+                item.dataset.value = i;
+                container.appendChild(item);
+            }
+
+            const handleScroll = () => {
+                const itemHeight = 50;
+                const scrollTop = container.scrollTop;
+                const selectedIdx = Math.round(scrollTop / itemHeight);
+                const items = container.querySelectorAll('.picker-item');
+                
+                let selectedVal = 1;
+                items.forEach((it, idx) => {
+                    if (idx === selectedIdx) {
+                        it.style.color = '#059669';
+                        it.style.transform = 'scale(1.15)';
+                        it.style.fontWeight = '900';
+                        selectedVal = parseInt(it.dataset.value) || 1;
+                    } else {
+                        it.style.color = '#94a3b8';
+                        it.style.transform = 'scale(0.9)';
+                        it.style.fontWeight = '700';
+                    }
+                });
+                onSelectCallback(selectedVal);
+            };
+
+            container.onscroll = handleScroll;
+            return handleScroll;
+        }
+
+        function scrollToPickerValue(container, val) {
+            container.scrollTop = (val - 1) * 50;
+        }
+
+        function setupShufflePickers(total) {
+            const startContainer = document.getElementById('shuffleStartPicker');
+            const endContainer = document.getElementById('shuffleEndPicker');
+
+            shuffleStartVal = 1;
+            shuffleEndVal = total;
+
+            const updateStart = createPicker(startContainer, total, "No. ", (val) => {
+                shuffleStartVal = val;
+                if (shuffleStartVal > shuffleEndVal) {
+                    shuffleEndVal = shuffleStartVal;
+                    scrollToPickerValue(endContainer, shuffleEndVal);
+                }
+            });
+
+            const updateEnd = createPicker(endContainer, total, "No. ", (val) => {
+                shuffleEndVal = val;
+                if (shuffleEndVal < shuffleStartVal) {
+                    shuffleStartVal = shuffleEndVal;
+                    scrollToPickerValue(startContainer, shuffleStartVal);
+                }
+            });
+
+            setTimeout(() => {
+                scrollToPickerValue(startContainer, 1);
+                scrollToPickerValue(endContainer, total);
+                updateStart();
+                updateEnd();
+            }, 50);
+        }
+
+        function setupPassPicker(total) {
+            const container = document.getElementById('passPickerList');
+            document.getElementById('passTotalCount').textContent = total;
+
+            targetPassScore = Math.min(total, Math.max(1, Math.ceil(total * 0.8)));
+
+            const updatePass = createPicker(container, total, "", (val) => {
+                targetPassScore = val;
+            });
+
+            setTimeout(() => {
+                scrollToPickerValue(container, targetPassScore);
+                updatePass();
+            }, 50);
+        }
+
+        function startGame() {
+            getAudioContext();
+            const fullList = MASTER_DATA;
+            
+            if (currentMode === 'order') {
+                questionsList = [...fullList];
+            } else if (currentMode === 'shuffle') {
+                const start = shuffleStartVal - 1;
+                const end = shuffleEndVal;
+                const subList = fullList.slice(start, end);
+                questionsList = shuffleArray([...subList]);
+            } else if (currentMode === 'pass') {
+                questionsList = shuffleArray([...fullList]);
+            }
+
+            currentQuestionIdx = 0;
+            streakCount = 0;
+            maxStreakCount = 0;
+            correctAnswersCount = 0;
+
+            showView('quizView');
+            renderQuestion();
+        }
+
+        function restartQuizSession() {
+            if (confirm("最初の出題（1問目）に戻りますか？")) {
+                startGame();
+            }
+        }
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function renderQuestion() {
+            isAnsweredCorrectly = false;
+            currentQuestionAttempts = 0;
+            const q = questionsList[currentQuestionIdx];
+
+            document.getElementById('currentQuestionNum').textContent = currentQuestionIdx + 1;
+            document.getElementById('totalQuestionNum').textContent = questionsList.length;
+            document.getElementById('streakCounter').textContent = streakCount;
+
+            const banner = document.getElementById('resultBanner');
+            banner.className = 'hidden';
+            banner.textContent = '';
+
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.disabled = true;
+            nextBtn.className = "w-full sm:w-auto px-8 py-3 bg-slate-200 text-slate-400 font-bold rounded-2xl transition cursor-not-allowed text-base flex items-center justify-center gap-2";
+
+            const ranksContainer = document.getElementById('ranksContainer');
+            ranksContainer.innerHTML = '';
+
+            const rankBadges = ["1位", "2位", "3位", "4位", "5位", "6位"];
+            const rankColors = [
+                "bg-amber-500 text-white border-amber-600",
+                "bg-slate-400 text-white border-slate-500",
+                "bg-amber-700 text-white border-amber-800",
+                "bg-emerald-600 text-white border-emerald-700",
+                "bg-teal-600 text-white border-teal-700",
+                "bg-green-600 text-white border-green-700"
+            ];
+
+            q.ranks.forEach((item, idx) => {
+                const badge = document.createElement('div');
+                badge.className = "inline-flex items-center gap-1.5 bg-slate-50 border px-3 py-1.5 rounded-2xl shadow-sm";
+                badge.innerHTML = `
+                    <span class="text-xs font-black px-2 py-0.5 rounded-full ${rankColors[idx]}">${rankBadges[idx]}</span>
+                    <span class="text-slate-800 font-bold text-sm sm:text-base">${item}</span>
+                `;
+                ranksContainer.appendChild(badge);
+            });
+
+            const choicesGrid = document.getElementById('choicesGrid');
+            choicesGrid.innerHTML = '';
+
+            // 選択肢（30択）
+            const allCountries = MASTER_DATA.map(item => item.name);
+
+            document.getElementById('choiceCountLabel').textContent = `選択肢: ${allCountries.length}国`;
+
+            allCountries.forEach(countryName => {
+                const btn = document.createElement('button');
+                btn.className = "choice-btn bg-white hover:bg-emerald-50 border-2 border-slate-200 hover:border-emerald-400 text-slate-700 font-bold py-2.5 px-2 rounded-2xl shadow-sm transition text-center text-xs sm:text-sm break-all flex items-center justify-center min-h-[46px]";
+                btn.textContent = countryName;
+                btn.onclick = () => handleAnswer(countryName, btn);
+                choicesGrid.appendChild(btn);
+            });
+        }
+
+        function showAnswer() {
+            const currentQ = questionsList[currentQuestionIdx];
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach(btn => {
+                if (btn.textContent === currentQ.name) {
+                    handleAnswer(currentQ.name, btn);
+                }
+            });
+        }
+
+        function handleAnswer(selectedName, btnElement) {
+            if (isAnsweredCorrectly) return;
+
+            currentQuestionAttempts++;
+            const currentQ = questionsList[currentQuestionIdx];
+            const isCorrect = (selectedName === currentQ.name);
+            const banner = document.getElementById('resultBanner');
+
+            if (isCorrect) {
+                isAnsweredCorrectly = true;
+                
+                if (currentQuestionAttempts === 1) {
+                    correctAnswersCount++;
+                    streakCount++;
+                    if (streakCount > maxStreakCount) maxStreakCount = streakCount;
+                } else {
+                    streakCount = 0;
+                }
+
+                playCorrectSound();
+
+                document.querySelectorAll('.choice-btn').forEach(b => {
+                    b.classList.add('pointer-events-none');
+                });
+
+                btnElement.className = "choice-btn bg-emerald-600 text-white border-2 border-emerald-700 font-black py-2.5 px-2 rounded-2xl shadow-md text-center text-xs sm:text-sm break-all flex items-center justify-center min-h-[46px] animate-pop";
+                
+                banner.textContent = "正解";
+                banner.className = "mt-3 text-lg sm:text-2xl font-black px-6 py-1.5 rounded-2xl animate-pop shadow-sm bg-emerald-100 text-emerald-800 border-emerald-300 block";
+
+                checkCrackerTrigger();
+
+            } else {
+                streakCount = 0;
+                playIncorrectSound();
+
+                btnElement.className = "choice-btn bg-slate-100 text-slate-400 border-2 border-slate-200 font-normal py-2.5 px-2 rounded-2xl text-center text-xs sm:text-sm break-all flex items-center justify-center min-h-[46px] cursor-not-allowed opacity-60";
+                btnElement.disabled = true;
+
+                banner.textContent = "もう1回挑戦！君ならできる！";
+                banner.className = "mt-3 text-sm sm:text-lg font-bold px-5 py-1.5 rounded-2xl animate-pop shadow-sm bg-rose-50 text-rose-600 border-rose-200 block";
+            }
+
+            document.getElementById('streakCounter').textContent = streakCount;
+
+            if (isAnsweredCorrectly) {
+                const nextBtn = document.getElementById('nextBtn');
+                nextBtn.disabled = false;
+                nextBtn.className = "w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black rounded-2xl shadow-md transition transform active:scale-95 text-base flex items-center justify-center gap-2 cursor-pointer";
+            }
+        }
+
+        function checkCrackerTrigger() {
+            if (currentQuestionIdx === questionsList.length - 1 && correctAnswersCount === questionsList.length) {
+                setTimeout(() => triggerBigCracker(), 200);
+                return;
+            }
+
+            if (streakCount > 0 && streakCount % 5 === 0) {
+                const count = Math.min(5, Math.floor(streakCount / 5));
+                setTimeout(() => triggerCrackers(count), 200);
+            }
+        }
+
+        function triggerCrackers(count) {
+            playCrackerBangSound(false);
+
+            const overlay = document.getElementById('crackerOverlay');
+            const container = document.getElementById('crackerContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.className = 'text-6xl sm:text-8xl animate-party drop-shadow-lg';
+                el.textContent = '🎉';
+                container.appendChild(el);
+            }
+
+            overlay.classList.remove('hidden');
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 40 * count,
+                    spread: 60 + count * 10,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 1200);
+        }
+
+        function triggerBigCracker() {
+            playCrackerBangSound(true);
+
+            const overlay = document.getElementById('crackerOverlay');
+            const container = document.getElementById('crackerContainer');
+            container.innerHTML = `
+                <div class="flex flex-col items-center gap-2 animate-pop">
+                    <div class="text-8xl sm:text-9xl animate-bounce">🎊</div>
+                    <div class="text-2xl sm:text-4xl font-black text-emerald-600 bg-white px-6 py-3 rounded-full shadow-2xl border-4 border-emerald-400 kiwi-font">
+                        全問正解！すごいすごい！
+                    </div>
+                </div>
+            `;
+
+            overlay.classList.remove('hidden');
+
+            if (typeof confetti === 'function') {
+                const duration = 2.5 * 1000;
+                const end = Date.now() + duration;
+
+                (function frame() {
+                    confetti({
+                        particleCount: 7,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 }
+                    });
+                    confetti({
+                        particleCount: 7,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 }
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                })();
+            }
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 2500);
+        }
+
+        function nextQuestion() {
+            playPopSound(700, 0.04);
+            currentQuestionIdx++;
+
+            if (currentQuestionIdx < questionsList.length) {
+                renderQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            document.getElementById('finalCorrectCount').textContent = correctAnswersCount;
+            document.getElementById('finalTotalCount').textContent = questionsList.length;
+            document.getElementById('finalMaxStreak').textContent = maxStreakCount;
+
+            const passBadge = document.getElementById('passBadge');
+            const title = document.getElementById('resultTitle');
+            const icon = document.getElementById('resultIcon');
+
+            if (currentMode === 'pass') {
+                passBadge.classList.remove('hidden');
+                if (correctAnswersCount >= targetPassScore) {
+                    passBadge.textContent = `合格目標（${targetPassScore}問）達成！おめでとう！ 🎉`;
+                    passBadge.className = "inline-block bg-emerald-500 text-white font-bold text-xs sm:text-sm px-4 py-1.5 rounded-full shadow";
+                    title.textContent = "合格おめでとう！！";
+                    icon.textContent = "🏆";
+                } else {
+                    passBadge.textContent = `目標（${targetPassScore}問）まであと少し！挑戦を続けよう！`;
+                    passBadge.className = "inline-block bg-amber-500 text-white font-bold text-xs sm:text-sm px-4 py-1.5 rounded-full shadow";
+                    title.textContent = "惜しい！あと少し！";
+                    icon.textContent = "📑";
+                }
+            } else {
+                passBadge.classList.add('hidden');
+                if (correctAnswersCount === questionsList.length) {
+                    title.textContent = "全問正解！すごいすごい！";
+                    icon.textContent = "👑";
+                } else {
+                    title.textContent = "お疲れさまでした！";
+                    icon.textContent = "👏";
+                }
+            }
+
+            showView('resultView');
+        }
+
+        function retryCurrentMode() {
+            startGame();
+        }
+
+        window.onload = function() {
+            const total = MASTER_DATA.length;
+            setupShufflePickers(total);
+            setupPassPicker(total);
+            switchModeTab('order');
+            showView('modeView');
+        };
+    </script>
+</body>
+</html>
